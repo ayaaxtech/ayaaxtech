@@ -1,33 +1,178 @@
 <!DOCTYPE html>
-<html>
-<head>
-  <title>Ayaax AI</title>
-</head>
-<body>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AYAAX // Logic Over Impulse.</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://js.stripe.com/v3/"></script>
+    
+    <!-- Firebase Compat CDN (User-requested fix) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
-<h2>Ayaax AI</h2>
-<div id="chat"></div>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            colors: {
+              background: 'var(--background)',
+              surface: 'var(--surface)',
+              primary: {
+                DEFAULT: '#39FF14',
+                surface: 'rgba(57, 255, 20, 0.08)',
+                glow: 'rgba(57, 255, 20, 0.3)',
+              },
+              accent: 'var(--text)',
+              brightRed: '#EF4444',
+              gold: '#F59E0B',
+              text: 'var(--text)',
+              muted: 'var(--muted)',
+              border: 'var(--border)',
+            },
+            borderRadius: {
+              '4xl': '2rem',
+              '5xl': '3.5rem',
+            },
+            fontFamily: {
+              sans: ['Inter', 'IBM Plex Sans Arabic', 'sans-serif'],
+              mono: ['JetBrains Mono', 'monospace'],
+              serif: ['Georgia', 'serif'],
+            },
+            boxShadow: {
+              'warm': '0 10px 30px -5px rgba(57, 255, 20, 0.1)',
+              'diffuse': '0 20px 40px -10px rgba(0, 0, 0, 0.05)',
+              'glow': '0 0 25px rgba(57, 255, 20, 0.3)',
+              'inner-glow': 'inset 0 0 15px rgba(57, 255, 20, 0.08)',
+              'white-accent': '0 0 15px rgba(255, 255, 255, 0.5)',
+            },
+          },
+        },
+      }
+    </script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=IBM+Plex+Sans+Arabic:wght@400;700&family=JetBrains+Mono:wght@500&display=swap');
+      
+      :root {
+        --primary: #39FF14;
+        --primary-rgb: 57, 255, 20;
+        --background: #09090B;
+        --surface: #111114;
+        --text: #FFFFFF;
+        --muted: #A1A1AA;
+        --border: #27272A;
+      }
 
-<input id="msg" placeholder="Type message">
-<button onclick="send()">Send</button>
+      .light-theme {
+        --background: #F4F4F5;
+        --surface: #FFFFFF;
+        --text: #09090B;
+        --muted: #71717A;
+        --border: #E4E4E7;
+      }
 
-<script>
-async function send(){
-  const input = document.getElementById("msg");
-  const chat = document.getElementById("chat");
+      body {
+        background-color: var(--background);
+        transition: background-color 0.5s ease;
+        color: var(--text);
+        margin: 0;
+        overflow: hidden;
+        font-family: 'Inter', 'IBM Plex Sans Arabic', sans-serif;
+      }
 
-  chat.innerHTML += "<p><b>You:</b> "+input.value+"</p>";
+      body.dark {
+        background-image: linear-gradient(rgba(9, 9, 11, 0.8), rgba(9, 9, 11, 0.9)), url('https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&q=80&w=2000');
+        background-size: cover;
+        background-position: center;
+        background-attachment: fixed;
+      }
 
-  const res = await fetch("/.netlify/functions/chat", {
-    method:"POST",
-    body: JSON.stringify({message: input.value})
-  });
+      .no-scrollbar::-webkit-scrollbar { display: none; }
+      .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-  const data = await res.json();
-  chat.innerHTML += "<p><b>AI:</b> "+data.reply+"</p>";
-  input.value="";
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 10px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(57, 255, 20, 0.2);
+        border-radius: 10px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(57, 255, 20, 0.4);
+      }
+
+      ::selection {
+        background-color: var(--primary);
+        color: black;
+      }
+
+      @keyframes ayaax-rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+
+      @keyframes lightning-pulse {
+        0%, 100% { opacity: 0; }
+        10%, 90% { opacity: 0.1; }
+        50% { opacity: 0.3; }
+      }
+
+      .lightning-overlay {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 50% 50%, rgba(255,255,255,0.1) 0%, transparent 70%);
+        mix-blend-mode: overlay;
+        animation: lightning-pulse 2s infinite ease-in-out;
+        pointer-events: none;
+      }
+
+      .sidebar-cool {
+        transition: width 1.5s cubic-bezier(0.85, 0, 0.15, 1), 
+                    opacity 1.2s cubic-bezier(0.85, 0, 0.15, 1), 
+                    transform 1.5s cubic-bezier(0.85, 0, 0.15, 1);
+        will-change: width, opacity;
+      }
+
+      @keyframes scaleIn {
+        from { opacity: 0; transform: scale(0.98); }
+        to { opacity: 1; transform: scale(1); }
+      }
+      
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes bounce-x {
+        0%, 100% { transform: translateX(0); }
+        50% { transform: translateX(5px); }
+      }
+    </style>
+    <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react-dom": "https://esm.sh/react-dom@^19.2.3",
+    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
+    "react-markdown": "https://esm.sh/react-markdown@^10.1.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
+    "uuid": "https://esm.sh/uuid@^13.0.0",
+    "vite": "https://esm.sh/vite@^7.3.1",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.4"
+  }
 }
 </script>
-
+  <link rel="stylesheet" href="/index.css">
+</head>
+  <body class="dark">
+    <div id="root"></div>
+  <script type="module" src="/index.tsx"></script>
 </body>
 </html>

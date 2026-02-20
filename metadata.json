@@ -1,0 +1,10 @@
+{
+  "name": "AYAAX",
+  "description": "AYAAX – Logic Over Impulse. An advanced AI intelligence node featuring a robust command center for high-precision technical tasks, architectural synthesis, and deep logic.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation",
+    "display-capture"
+  ]
+}
